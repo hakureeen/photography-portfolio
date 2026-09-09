@@ -9,7 +9,6 @@ function Navbar() {
     { href: '/', label: 'Home' },
     { href: '/portfolio', label: 'Portfolio' },
     { href: '/about', label: 'About' },
-    { href: '/services', label: 'Services' },
     { href: '/reviews', label: 'Reviews' },
   ]
 

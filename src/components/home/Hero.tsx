@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-const heroFiles = import.meta.glob('/public/images/hero/*.jpg', {
+const heroFiles = import.meta.glob('/src/assets/images/hero/*.jpg', {
   eager: true,
   import: 'default',
 }) as Record<string, string>
 
-const portfolioFiles = import.meta.glob('/public/images/portfolio/*.jpg', {
+const portfolioFiles = import.meta.glob('/src/assets/images/portfolio/**/*.jpg', {
   eager: true,
   import: 'default',
 }) as Record<string, string>
@@ -16,21 +16,31 @@ const heroImages = Object.keys(heroFiles)
 const portfolioImages = Object.values(portfolioFiles)
 
 const SECONDS_PER_IMAGE = 4000
+const THUMBS_PER_PAGE = 4
 
 function Hero() {
   const [currentImage, setCurrentImage] = useState(0)
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImage((current) => (current + 1) % heroImages.length)
     }, SECONDS_PER_IMAGE)
-
     return () => clearInterval(timer)
   }, [])
 
-  const [randomThumbnails] = useState(() => {
-    const shuffled = [...portfolioImages].sort(() => Math.random() - 0.5)
-    return shuffled.slice(0, 4)
+  const [thumbnails] = useState(() => {
+    return [...portfolioImages].sort(() => Math.random() - 0.5)
   })
+
+  const [page, setPage] = useState(0)
+  const totalPages = Math.max(1, Math.ceil(thumbnails.length / THUMBS_PER_PAGE))
+  const visibleThumbnails = thumbnails.slice(
+    page * THUMBS_PER_PAGE,
+    page * THUMBS_PER_PAGE + THUMBS_PER_PAGE
+  )
+
+  const goPrev = () => setPage((p) => (p - 1 + totalPages) % totalPages)
+  const goNext = () => setPage((p) => (p + 1) % totalPages)
 
   return (
     <section className="grid min-h-[92vh] grid-cols-1 md:grid-cols-[2fr_3fr]">
@@ -69,16 +79,35 @@ function Hero() {
           ))}
         </div>
 
-        {/* 4 small thumbnail photos in a row */}
-        <div className="flex border-t border-[#2b2926] bg-[#161513]">
-          {randomThumbnails.map((imageUrl) => (
-            <img
-              key={imageUrl}
-              src={imageUrl}
-              alt=""
-              className="h-full flex-1 border-r border-[#2b2926] object-cover last:border-r-0"
-            />
-          ))}
+        <div className="flex h-[110px] overflow-hidden border-t border-[#2b2926] bg-[#161513]">
+          <button
+            type="button"
+            onClick={goPrev}
+            aria-label="Previous photos"
+            className="flex w-8 flex-shrink-0 items-center justify-center text-lg text-[#9a968f] transition hover:text-[#c97a3d]"
+          >
+            ‹
+          </button>
+
+          <div className="grid h-full flex-1 grid-cols-4 overflow-hidden">
+            {visibleThumbnails.map((imageUrl) => (
+              <img
+                key={imageUrl}
+                src={imageUrl}
+                alt=""
+                className="h-full w-full border-l border-[#2b2926] object-cover"
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={goNext}
+            aria-label="Next photos"
+            className="flex w-8 flex-shrink-0 items-center justify-center border-l border-[#2b2926] text-lg text-[#9a968f] transition hover:text-[#c97a3d]"
+          >
+            ›
+          </button>
         </div>
       </div>
     </section>
