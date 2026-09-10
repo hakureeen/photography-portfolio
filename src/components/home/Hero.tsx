@@ -13,20 +13,41 @@ const heroImages = Object.keys(heroFiles)
   .sort()
   .map((filename) => heroFiles[filename])
 
-const portfolioImages = Object.values(portfolioFiles)
+const portfolioImages = Object.entries(portfolioFiles).map(([path, url]) => ({
+  path,
+  url,
+}))
 
 const SECONDS_PER_IMAGE = 4000
 const THUMBS_PER_PAGE = 4
 
 function Hero() {
-  const [currentImage, setCurrentImage] = useState(0)
+  const [slotIndexes, setSlotIndexes] = useState<[number, number]>([0, -1])
+  const [activeSlot, setActiveSlot] = useState<0 | 1>(0)
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentImage((current) => (current + 1) % heroImages.length)
+      setActiveSlot((current) => {
+        const nextSlot = current === 0 ? 1 : 0
+        setSlotIndexes((prev) => {
+          const currentHeroIndex = prev[current]
+          const nextHeroIndex = (currentHeroIndex + 1) % heroImages.length
+          const updated: [number, number] = [...prev] as [number, number]
+          updated[nextSlot] = nextHeroIndex
+          return updated
+        })
+        return nextSlot
+      })
     }, SECONDS_PER_IMAGE)
     return () => clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    const activeHeroIndex = slotIndexes[activeSlot]
+    const nextHeroIndex = (activeHeroIndex + 1) % heroImages.length
+    const preload = new Image()
+    preload.src = heroImages[nextHeroIndex]
+  }, [activeSlot, slotIndexes])
 
   const [thumbnails] = useState(() => {
     return [...portfolioImages].sort(() => Math.random() - 0.5)
@@ -67,16 +88,18 @@ function Hero() {
 
       <div className="grid grid-rows-[1fr_110px]">
         <div className="relative overflow-hidden">
-          {heroImages.map((imageUrl, index) => (
-            <img
-              key={imageUrl}
-              src={imageUrl}
-              alt=""
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
-                index === currentImage ? 'opacity-100' : 'opacity-0'
-              }`}
-            />
-          ))}
+          {slotIndexes.map((heroIndex, slot) =>
+            heroIndex === -1 ? null : (
+              <img
+                key={`slot-${slot}`}
+                src={heroImages[heroIndex]}
+                alt=""
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+                  slot === activeSlot ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            )
+          )}
         </div>
 
         <div className="flex h-[110px] overflow-hidden border-t border-[#2b2926] bg-[#161513]">
@@ -90,13 +113,26 @@ function Hero() {
           </button>
 
           <div className="grid h-full flex-1 grid-cols-4 overflow-hidden">
-            {visibleThumbnails.map((imageUrl) => (
-              <img
-                key={imageUrl}
-                src={imageUrl}
-                alt=""
-                className="h-full w-full border-l border-[#2b2926] object-cover"
-              />
+            {visibleThumbnails.map(({ path, url }) => (
+              <div
+                key={path}
+                className="relative h-full w-full overflow-hidden border-l border-[#2b2926] bg-[#0f0e0c]"
+              >
+                {/* Soft blurred fill so small or odd-aspect photos don't
+                    leave stark black bars — the empty space picks up the
+                    photo's own colors instead. */}
+                <img
+                  src={url}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-lg"
+                />
+                <img
+                  src={url}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-contain"
+                />
+              </div>
             ))}
           </div>
 
